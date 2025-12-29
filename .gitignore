@@ -39,6 +39,10 @@ logs/
 .env.local
 .env.*.local
 
+# Vercel
+.vercel
+.vercel/
+
 # X-Ray Data (execution traces and evaluations)
 # Keep directory structure but ignore generated data
 xray_data/*.json

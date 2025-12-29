@@ -497,8 +497,6 @@
             margin-bottom: 20px;
             opacity: 0.5;
         }
-        
-        /* Pagination styles */
         .pagination {
             display: flex;
             justify-content: center;
@@ -551,7 +549,6 @@
     </header>
     
     <div class="container">
-        <!-- Run Demo Section -->
         <div class="run-demo-section" id="runDemoSection">
             <h2>Run Demo with Custom Parameters</h2>
             <p style="margin-bottom: 20px; opacity: 0.9;">Configure and execute the competitor selection pipeline</p>
@@ -590,8 +587,6 @@
                 </button>
             </div>
         </div>
-        
-        <!-- Upload Section -->
         <div class="upload-section" id="uploadSection">
             <div class="upload-area" id="uploadArea">
                 <h2>Load Execution Data</h2>
@@ -605,9 +600,7 @@
             </div>
         </div>
         
-        <!-- Main Content (hidden until data loaded) -->
         <div id="mainContent" class="hidden">
-            <!-- Execution Overview -->
             <div class="execution-overview">
                 <div class="execution-header">
                     <h2 class="execution-title" id="executionName">-</h2>
@@ -634,13 +627,9 @@
                 </div>
             </div>
             
-            <!-- Steps -->
             <div class="steps-container" id="stepsContainer">
-                <!-- Steps will be dynamically inserted here -->
             </div>
         </div>
-        
-        <!-- Empty State -->
         <div id="emptyState" class="empty-state hidden">
             <div class="empty-state-icon">📭</div>
             <h2>No Data Loaded</h2>
@@ -651,13 +640,10 @@
     <script>
         let currentExecution = null;
         
-        // File upload handling
         const fileInput = document.getElementById('fileInput');
         const uploadArea = document.getElementById('uploadArea');
         
         fileInput.addEventListener('change', handleFileSelect);
-        
-        // Drag and drop
         uploadArea.addEventListener('dragover', (e) => {
             e.preventDefault();
             uploadArea.classList.add('dragover');
@@ -703,12 +689,8 @@
         
         function loadExecution(data) {
             currentExecution = data;
-            
-            // Hide upload, show content
             document.getElementById('uploadSection').classList.add('hidden');
             document.getElementById('mainContent').classList.remove('hidden');
-            
-            // Populate overview
             document.getElementById('executionName').textContent = data.name || 'Unnamed Execution';
             document.getElementById('executionId').textContent = data.id.substring(0, 8) + '...';
             document.getElementById('startTime').textContent = formatDate(data.timestamp_start);
@@ -718,8 +700,6 @@
             const statusBadge = document.getElementById('statusBadge');
             statusBadge.textContent = data.status;
             statusBadge.className = 'status-badge status-' + data.status;
-            
-            // Render steps
             renderSteps(data.steps);
         }
         
@@ -765,8 +745,6 @@
         
         function renderStepBody(step) {
             let html = '';
-            
-            // Reasoning
             if (step.reasoning) {
                 html += `
                     <div class="step-section">
@@ -779,7 +757,6 @@
                 `;
             }
             
-            // Input
             if (step.input) {
                 html += `
                     <div class="step-section">
@@ -792,15 +769,12 @@
                 `;
             }
             
-            // Evaluations (the star of the show!)
             if (step.evaluations) {
-                // Check if it's streaming mode (object) or regular mode (array)
                 if (step.evaluations.mode === "stream" || (Array.isArray(step.evaluations) && step.evaluations.length > 0)) {
                     html += renderEvaluations(step.evaluations);
                 }
             }
             
-            // Output
             if (step.output) {
                 html += `
                     <div class="step-section">
@@ -817,21 +791,16 @@
         }
         
         function renderEvaluations(evaluations) {
-            // Debug: Log what we received
             console.log('renderEvaluations called with:', evaluations);
             
-            // Check if streaming mode (large dataset)
             if (evaluations && evaluations.mode === "stream") {
                 console.log('Rendering streaming evaluations');
                 return renderStreamingEvaluations(evaluations);
             }
             
-            // Check if empty
             if (!evaluations || evaluations.length === 0) {
                 return '';
             }
-            
-            // Original array format
             const passedCount = evaluations.filter(e => e.qualified).length;
             const failedCount = evaluations.length - passedCount;
             
@@ -879,9 +848,6 @@
         }
         
         function renderStreamingEvaluations(streamInfo) {
-            /**
-             * Render streaming evaluation summary with load-on-demand.
-             */
             const totalCount = streamInfo.total;
             const passedCount = streamInfo.passed;
             const failedCount = streamInfo.failed;
@@ -932,12 +898,7 @@
         }
         
         async function loadStreamingEvaluations(filepath, buttonElement) {
-            /**
-             * Load evaluations from JSONL file and display them.
-             */
             const container = document.getElementById('streaming-evaluations-container');
-            
-            // Show loading state
             buttonElement.disabled = true;
             buttonElement.textContent = 'Loading...';
             container.style.display = 'block';
@@ -945,8 +906,6 @@
             
             try {
                 console.log('Fetching evaluations from:', filepath);
-                
-                // Fetch the JSONL file
                 const response = await fetch(filepath);
                 console.log('Response status:', response.status, response.statusText);
                 
@@ -956,8 +915,6 @@
                 
                 const text = await response.text();
                 const lines = text.trim().split('\n');
-                
-                // Parse each line as JSON
                 const evaluations = [];
                 for (const line of lines) {
                     if (line.trim()) {
@@ -968,12 +925,8 @@
                         }
                     }
                 }
-                
-                // Display success message
                 buttonElement.textContent = `Loaded ${evaluations.length} Evaluations`;
                 buttonElement.style.background = '#48bb78';
-                
-                // Render evaluations with filters and pagination
                 renderLoadedEvaluations(evaluations, container);
                 
             } catch (error) {
@@ -995,13 +948,9 @@
         }
         
         function renderLoadedEvaluations(evaluations, container) {
-            /**
-             * Render the loaded evaluations with filters and pagination.
-             */
             const passedCount = evaluations.filter(e => e.qualified).length;
             const failedCount = evaluations.length - passedCount;
             
-            // Store evaluations globally for filtering and pagination
             window.currentEvaluations = evaluations;
             window.currentFilter = 'all';
             window.currentPage = 1;
@@ -1027,15 +976,10 @@
             `;
             
             container.innerHTML = html;
-            
-            // Render first page
             renderEvaluationsPage();
         }
         
         function getFilteredEvaluations() {
-            /**
-             * Get evaluations filtered by current filter.
-             */
             if (!window.currentEvaluations) return [];
             
             if (window.currentFilter === 'all') {
@@ -1049,14 +993,10 @@
         }
         
         function renderEvaluationsPage() {
-            /**
-             * Render the current page of evaluations.
-             */
             const filtered = getFilteredEvaluations();
             const totalItems = filtered.length;
             const totalPages = Math.ceil(totalItems / window.itemsPerPage);
             
-            // Ensure current page is valid
             if (window.currentPage > totalPages && totalPages > 0) {
                 window.currentPage = totalPages;
             }
@@ -1064,12 +1004,9 @@
                 window.currentPage = 1;
             }
             
-            // Calculate slice indices
             const startIdx = (window.currentPage - 1) * window.itemsPerPage;
             const endIdx = Math.min(startIdx + window.itemsPerPage, totalItems);
             const pageItems = filtered.slice(startIdx, endIdx);
-            
-            // Render evaluations
             const listContainer = document.getElementById('evaluations-list');
             if (listContainer) {
                 let html = '';
@@ -1083,36 +1020,26 @@
                 
                 listContainer.innerHTML = html;
             }
-            
-            // Render pagination controls
             renderPaginationControls(totalItems, totalPages);
         }
         
         function renderPaginationControls(totalItems, totalPages) {
-            /**
-             * Render pagination buttons.
-             */
             const startIdx = (window.currentPage - 1) * window.itemsPerPage + 1;
             const endIdx = Math.min(window.currentPage * window.itemsPerPage, totalItems);
             
             let paginationHTML = '';
             
             if (totalPages > 1) {
-                // Previous button
                 paginationHTML += `
                     <button class="pagination-btn" onclick="changePage(${window.currentPage - 1})" ${window.currentPage === 1 ? 'disabled' : ''}>
                         ◀ Previous
                     </button>
                 `;
-                
-                // Page info
                 paginationHTML += `
                     <span class="pagination-info">
                         Showing ${startIdx}-${endIdx} of ${totalItems} items (Page ${window.currentPage} of ${totalPages})
                     </span>
                 `;
-                
-                // Next button
                 paginationHTML += `
                     <button class="pagination-btn" onclick="changePage(${window.currentPage + 1})" ${window.currentPage === totalPages ? 'disabled' : ''}>
                         Next ▶
@@ -1125,8 +1052,6 @@
                     </span>
                 `;
             }
-            
-            // Update both pagination areas
             const topPagination = document.getElementById('pagination-top');
             const bottomPagination = document.getElementById('pagination-bottom');
             
@@ -1135,17 +1060,12 @@
         }
         
         function changePage(newPage) {
-            /**
-             * Change to a different page.
-             */
             const filtered = getFilteredEvaluations();
             const totalPages = Math.ceil(filtered.length / window.itemsPerPage);
             
             if (newPage >= 1 && newPage <= totalPages) {
                 window.currentPage = newPage;
                 renderEvaluationsPage();
-                
-                // Scroll to top of evaluations
                 const listContainer = document.getElementById('evaluations-list');
                 if (listContainer) {
                     listContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -1154,27 +1074,17 @@
         }
         
         function changeFilter(filter) {
-            /**
-             * Change the evaluation filter.
-             */
-            // Update button states
             document.querySelectorAll('.filter-btn').forEach(btn => {
                 btn.classList.remove('active');
             });
             event.target.classList.add('active');
-            
-            // Update filter and reset to page 1
             window.currentFilter = filter;
             window.currentPage = 1;
             
-            // Re-render
             renderEvaluationsPage();
         }
         
         function downloadJSONL(filepath) {
-            /**
-             * Download the JSONL file.
-             */
             window.open(filepath, '_blank');
         }
         
@@ -1189,8 +1099,6 @@
                         <span class="eval-badge ${status}">${badge}</span>
                     </div>
             `;
-            
-            // Show item data
             if (eval.item_data) {
                 html += '<div style="color: #718096; font-size: 0.9rem; margin-bottom: 10px;">';
                 if (eval.item_data.price) html += `💲 $${eval.item_data.price} `;
@@ -1199,7 +1107,6 @@
                 html += '</div>';
             }
             
-            // Show checks
             if (eval.checks && eval.checks.length > 0) {
                 html += '<div class="eval-checks">';
                 eval.checks.forEach(check => {
@@ -1226,17 +1133,11 @@
         }
         
         function filterEvals(filter) {
-            /**
-             * Legacy filter function for non-paginated evaluations.
-             * Used for inline evaluations in step details.
-             */
-            // Update button states
             document.querySelectorAll('.filter-btn').forEach(btn => {
                 btn.classList.remove('active');
             });
             event.target.classList.add('active');
-            
-            // Filter evaluations
+
             document.querySelectorAll('.evaluation').forEach(eval => {
                 const status = eval.getAttribute('data-eval-status');
                 if (filter === 'all' || status === filter) {
@@ -1252,15 +1153,12 @@
             return date.toLocaleString();
         }
         
-        // ===== API Functions for Running Demo =====
-        
         async function runDemo() {
             const btn = document.getElementById('runDemoBtn');
             const status = document.getElementById('runStatus');
             const statusText = document.getElementById('runStatusText');
             const viewBtn = document.getElementById('viewResultsBtn');
             
-            // Get parameters
             const params = {
                 num_candidates: parseInt(document.getElementById('numCandidates').value),
                 min_price_multiplier: parseFloat(document.getElementById('minPrice').value),
@@ -1268,8 +1166,7 @@
                 min_rating: parseFloat(document.getElementById('minRating').value),
                 min_reviews: parseInt(document.getElementById('minReviews').value)
             };
-            
-            // Update UI
+
             btn.disabled = true;
             btn.textContent = 'Running...';
             status.classList.add('show');
@@ -1277,7 +1174,7 @@
             viewBtn.style.display = 'none';
             
             try {
-                const response = await fetch('http://localhost:5000/api/demo/run', {
+                const response = await fetch('/api/demo/run', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -1292,11 +1189,9 @@
                         <strong>Demo completed successfully!</strong><br>
                         Execution ID: ${result.execution_id}
                     `;
-                    
-                    // Store execution data for quick access
+
                     window.lastExecution = result.execution_data;
                     
-                    // Auto-load after a brief delay
                     setTimeout(() => {
                         loadLastExecution();
                     }, 1500);
@@ -1310,7 +1205,6 @@
                     <strong>Failed to connect to API server</strong><br>
                     Make sure the API server is running: <code>python api_server.py</code>
                 `;
-                console.error('Error:', error);
             } finally {
                 btn.disabled = false;
                 btn.textContent = 'Run Demo';
@@ -1319,10 +1213,7 @@
         
         function loadLastExecution() {
             if (window.lastExecution) {
-                // Load the execution data
                 loadExecution(window.lastExecution);
-                
-                // Scroll to results after a brief delay
                 setTimeout(() => {
                     const mainContent = document.getElementById('mainContent');
                     if (mainContent) {
@@ -1334,11 +1225,9 @@
                 }, 200);
             }
         }
-        
-        // Auto-expand first step
         setTimeout(() => {
             if (currentExecution && currentExecution.steps.length > 0) {
-                toggleStep(2); // Expand the filter step by default
+                toggleStep(2);
             }
         }, 100);
     </script>

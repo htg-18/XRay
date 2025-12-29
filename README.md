@@ -25,7 +25,7 @@ source venv/bin/activate
 
 3. Install dependencies:
 ```bash
-pip install flask flask-cors
+pip install -r requirements.txt
 ```
 
 4. Run the server:
@@ -37,6 +37,15 @@ python api_server.py
 ```
 http://localhost:5000
 ```
+
+### Storage Modes
+
+The application automatically detects the deployment environment:
+
+- **Local Mode**: Saves execution traces and evaluations to local `xray_data/` directory
+- **Vercel Mode**: Uses Vercel Blob Storage API for persistent cloud storage
+
+This allows the same codebase to work seamlessly in both local development and production deployment.
 
 ## Usage
 

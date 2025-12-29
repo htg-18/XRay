@@ -10,3 +10,5 @@
 flask>=2.3.0
 flask-cors>=4.0.0
 
+# For Vercel deployment (cloud storage):
+requests>=2.31.0
