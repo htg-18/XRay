@@ -30,6 +30,7 @@ class VercelBlobEvaluationStream:
         self.passed_count = 0
         self.failed_count = 0
         self._content_lines: List[str] = []
+        self._blob_url: Optional[str] = None
     
     def __enter__(self):
         return self
@@ -79,6 +80,10 @@ class VercelBlobEvaluationStream:
             
             if response.status_code != 200:
                 logger.error(f"Failed to upload evaluations to Vercel Blob: {response.text}")
+            else:
+                result = response.json()
+                self._blob_url = result.get('url')
+                logger.info(f"Uploaded evaluations to: {self._blob_url}")
         except Exception as e:
             logger.exception(f"Error uploading evaluations: {e}")
     
@@ -87,9 +92,12 @@ class VercelBlobEvaluationStream:
         if self.count > 0:
             pass_rate = round((self.passed_count / self.count) * 100, 2)
         
+        # Use the blob URL if available, otherwise fall back to a local-style path
+        file_path = self._blob_url if self._blob_url else f"xray_data/{self.filename}"
+        
         return {
             "mode": "stream",
-            "file": f"xray_data/{self.filename}",
+            "file": file_path,
             "total": self.count,
             "passed": self.passed_count,
             "failed": self.failed_count,
