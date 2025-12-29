@@ -1,0 +1,1347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>X-Ray Dashboard - Decision Process Debugger</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #f5f7fa;
+            color: #2c3e50;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+            padding: 30px 0;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        
+        header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        .upload-section {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        
+        .run-demo-section {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            color: white;
+        }
+        
+        .run-demo-section h2 {
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+        }
+        
+        .params-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .param-field {
+            text-align: left;
+        }
+        
+        .param-field label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+        
+        .param-field input {
+            width: 100%;
+            padding: 10px;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+        }
+        
+        .btn-run-demo {
+            background: white;
+            color: #2980b9;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+        
+        .btn-run-demo:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.3);
+        }
+        
+        .btn-run-demo:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .run-status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            background: rgba(255,255,255,0.2);
+            display: none;
+        }
+        
+        .run-status.show {
+            display: block;
+        }
+        
+        .upload-area {
+            border: 3px dashed #cbd5e0;
+            border-radius: 12px;
+            padding: 40px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .upload-area:hover {
+            border-color: #3498db;
+            background: #f7fafc;
+        }
+        
+        .upload-area.dragover {
+            border-color: #3498db;
+            background: #edf2f7;
+        }
+        
+        #fileInput {
+            display: none;
+        }
+        
+        .btn {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+        
+        .btn:hover {
+            background: #2980b9;
+        }
+        
+        .execution-overview {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .execution-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .execution-title {
+            font-size: 1.8rem;
+            font-weight: 600;
+            color: #2d3748;
+        }
+        
+        .status-badge {
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+        
+        .status-completed {
+            background: #c6f6d5;
+            color: #22543d;
+        }
+        
+        .status-failed {
+            background: #fed7d7;
+            color: #742a2a;
+        }
+        
+        .execution-meta {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .meta-item {
+            padding: 15px;
+            background: #f7fafc;
+            border-radius: 8px;
+        }
+        
+        .meta-label {
+            font-size: 0.85rem;
+            color: #718096;
+            margin-bottom: 5px;
+        }
+        
+        .meta-value {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #2d3748;
+        }
+        
+        .steps-container {
+            margin-top: 30px;
+        }
+        
+        .step {
+            background: white;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        .step:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        
+        .step-header {
+            padding: 20px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+        }
+        
+        .step-header:hover {
+            background: #f1f3f5;
+        }
+        
+        .step-info {
+            flex: 1;
+        }
+        
+        .step-name {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 5px;
+        }
+        
+        .step-type {
+            display: inline-block;
+            padding: 3px 10px;
+            background: #e2e8f0;
+            color: #4a5568;
+            border-radius: 5px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-right: 10px;
+        }
+        
+        .step-duration {
+            color: #718096;
+            font-size: 0.9rem;
+        }
+        
+        .step-expand-icon {
+            font-size: 1.5rem;
+            color: #a0aec0;
+            transition: transform 0.3s ease;
+        }
+        
+        .step.expanded .step-expand-icon {
+            transform: rotate(180deg);
+        }
+        
+        .step-body {
+            display: none;
+            padding: 25px;
+            border-top: 1px solid #e2e8f0;
+        }
+        
+        .step.expanded .step-body {
+            display: block;
+        }
+        
+        .step-section {
+            margin-bottom: 25px;
+        }
+        
+        .step-section:last-child {
+            margin-bottom: 0;
+        }
+        
+        .section-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .section-icon {
+            margin-right: 8px;
+        }
+        
+        .code-block {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 0.9rem;
+        }
+        
+        .reasoning-box {
+            background: #fffaf0;
+            border-left: 4px solid #f6ad55;
+            padding: 15px;
+            border-radius: 4px;
+            color: #744210;
+        }
+        
+        .evaluations-container {
+            margin-top: 15px;
+        }
+        
+        .evaluation-filters {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .filter-btn {
+            padding: 8px 16px;
+            border: 2px solid #e2e8f0;
+            background: white;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+        }
+        
+        .filter-btn:hover {
+            border-color: #667eea;
+        }
+        
+        .filter-btn.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+        
+        .evaluation {
+            background: #f7fafc;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-left: 4px solid #cbd5e0;
+        }
+        
+        .evaluation.passed {
+            border-left-color: #48bb78;
+            background: #f0fff4;
+        }
+        
+        .evaluation.failed {
+            border-left-color: #f56565;
+            background: #fff5f5;
+        }
+        
+        .eval-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .eval-title {
+            font-weight: 600;
+            color: #2d3748;
+        }
+        
+        .eval-badge {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        
+        .eval-badge.passed {
+            background: #c6f6d5;
+            color: #22543d;
+        }
+        
+        .eval-badge.failed {
+            background: #fed7d7;
+            color: #742a2a;
+        }
+        
+        .eval-checks {
+            margin-top: 10px;
+        }
+        
+        .check-item {
+            display: flex;
+            align-items: center;
+            padding: 8px 0;
+            font-size: 0.9rem;
+        }
+        
+        .check-icon {
+            margin-right: 10px;
+            font-size: 1.1rem;
+        }
+        
+        .check-icon.passed {
+            color: #48bb78;
+        }
+        
+        .check-icon.failed {
+            color: #f56565;
+        }
+        
+        .check-name {
+            font-weight: 600;
+            margin-right: 8px;
+            min-width: 120px;
+        }
+        
+        .check-detail {
+            color: #718096;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .stat-card {
+            background: #f7fafc;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .stat-number {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #2d3748;
+        }
+        
+        .stat-label {
+            font-size: 0.85rem;
+            color: #718096;
+            margin-top: 5px;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #718096;
+        }
+        
+        .empty-state-icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+        
+        /* Pagination styles */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            margin: 20px 0;
+            padding: 15px;
+        }
+        
+        .pagination-btn {
+            padding: 8px 16px;
+            border: 2px solid #e2e8f0;
+            background: white;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+            font-weight: 500;
+        }
+        
+        .pagination-btn:hover:not(:disabled) {
+            border-color: #667eea;
+            background: #f7fafc;
+        }
+        
+        .pagination-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+        
+        .pagination-btn.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+        
+        .pagination-info {
+            color: #718096;
+            font-size: 0.9rem;
+            margin: 0 10px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>X-Ray Dashboard</h1>
+            <p>Decision Process Debugger - Visualize multi-step algorithmic decisions</p>
+        </div>
+    </header>
+    
+    <div class="container">
+        <!-- Run Demo Section -->
+        <div class="run-demo-section" id="runDemoSection">
+            <h2>Run Demo with Custom Parameters</h2>
+            <p style="margin-bottom: 20px; opacity: 0.9;">Configure and execute the competitor selection pipeline</p>
+            
+            <div class="params-grid">
+                <div class="param-field">
+                    <label>Number of Candidates</label>
+                    <input type="number" id="numCandidates" value="50" min="10" max="100">
+                </div>
+                <div class="param-field">
+                    <label>Min Price Multiplier</label>
+                    <input type="number" id="minPrice" value="0.5" step="0.1" min="0.1">
+                </div>
+                <div class="param-field">
+                    <label>Max Price Multiplier</label>
+                    <input type="number" id="maxPrice" value="2.0" step="0.1" min="1.0">
+                </div>
+                <div class="param-field">
+                    <label>Minimum Rating</label>
+                    <input type="number" id="minRating" value="3.8" step="0.1" min="1.0" max="5.0">
+                </div>
+                <div class="param-field">
+                    <label>Minimum Reviews</label>
+                    <input type="number" id="minReviews" value="100" min="0">
+                </div>
+            </div>
+            
+            <button class="btn-run-demo" onclick="runDemo()" id="runDemoBtn">
+                Run Demo
+            </button>
+            
+            <div class="run-status" id="runStatus">
+                <p id="runStatusText"></p>
+                <button class="btn" onclick="loadLastExecution()" id="viewResultsBtn" style="display: none; margin-top: 10px;">
+                    View Results
+                </button>
+            </div>
+        </div>
+        
+        <!-- Upload Section -->
+        <div class="upload-section" id="uploadSection">
+            <div class="upload-area" id="uploadArea">
+                <h2>Load Execution Data</h2>
+                <p style="margin: 15px 0; color: #718096;">
+                    Drag and drop a JSON file here, or click to select
+                </p>
+                <button class="btn" onclick="document.getElementById('fileInput').click()">
+                    Choose File
+                </button>
+                <input type="file" id="fileInput" accept=".json">
+            </div>
+        </div>
+        
+        <!-- Main Content (hidden until data loaded) -->
+        <div id="mainContent" class="hidden">
+            <!-- Execution Overview -->
+            <div class="execution-overview">
+                <div class="execution-header">
+                    <h2 class="execution-title" id="executionName">-</h2>
+                    <span class="status-badge" id="statusBadge">-</span>
+                </div>
+                
+                <div class="execution-meta">
+                    <div class="meta-item">
+                        <div class="meta-label">Execution ID</div>
+                        <div class="meta-value" id="executionId">-</div>
+                    </div>
+                    <div class="meta-item">
+                        <div class="meta-label">Started At</div>
+                        <div class="meta-value" id="startTime">-</div>
+                    </div>
+                    <div class="meta-item">
+                        <div class="meta-label">Duration</div>
+                        <div class="meta-value" id="duration">-</div>
+                    </div>
+                    <div class="meta-item">
+                        <div class="meta-label">Steps</div>
+                        <div class="meta-value" id="stepCount">-</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Steps -->
+            <div class="steps-container" id="stepsContainer">
+                <!-- Steps will be dynamically inserted here -->
+            </div>
+        </div>
+        
+        <!-- Empty State -->
+        <div id="emptyState" class="empty-state hidden">
+            <div class="empty-state-icon">📭</div>
+            <h2>No Data Loaded</h2>
+            <p>Upload an X-Ray execution JSON file to get started</p>
+        </div>
+    </div>
+    
+    <script>
+        let currentExecution = null;
+        
+        // File upload handling
+        const fileInput = document.getElementById('fileInput');
+        const uploadArea = document.getElementById('uploadArea');
+        
+        fileInput.addEventListener('change', handleFileSelect);
+        
+        // Drag and drop
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+        
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+        
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                loadFile(files[0]);
+            }
+        });
+        
+        function handleFileSelect(e) {
+            const files = e.target.files;
+            if (files.length > 0) {
+                loadFile(files[0]);
+            }
+        }
+        
+        function loadFile(file) {
+            if (!file.name.endsWith('.json')) {
+                alert('Please select a JSON file');
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    loadExecution(data);
+                } catch (err) {
+                    alert('Error parsing JSON: ' + err.message);
+                }
+            };
+            reader.readAsText(file);
+        }
+        
+        function loadExecution(data) {
+            currentExecution = data;
+            
+            // Hide upload, show content
+            document.getElementById('uploadSection').classList.add('hidden');
+            document.getElementById('mainContent').classList.remove('hidden');
+            
+            // Populate overview
+            document.getElementById('executionName').textContent = data.name || 'Unnamed Execution';
+            document.getElementById('executionId').textContent = data.id.substring(0, 8) + '...';
+            document.getElementById('startTime').textContent = formatDate(data.timestamp_start);
+            document.getElementById('duration').textContent = data.duration_ms + 'ms';
+            document.getElementById('stepCount').textContent = data.steps.length;
+            
+            const statusBadge = document.getElementById('statusBadge');
+            statusBadge.textContent = data.status;
+            statusBadge.className = 'status-badge status-' + data.status;
+            
+            // Render steps
+            renderSteps(data.steps);
+        }
+        
+        function renderSteps(steps) {
+            const container = document.getElementById('stepsContainer');
+            container.innerHTML = '';
+            
+            steps.forEach((step, index) => {
+                const stepEl = createStepElement(step, index);
+                container.appendChild(stepEl);
+            });
+        }
+        
+        function createStepElement(step, index) {
+            const div = document.createElement('div');
+            div.className = 'step';
+            div.id = 'step-' + index;
+            
+            const statusIcon = step.status === 'success' ? '✓' : '✗';
+            const statusColor = step.status === 'success' ? '#48bb78' : '#f56565';
+            
+            div.innerHTML = `
+                <div class="step-header" onclick="toggleStep(${index})">
+                    <div class="step-info">
+                        <div class="step-name">
+                            <span style="color: ${statusColor}; margin-right: 8px;">${statusIcon}</span>
+                            ${index + 1}. ${step.name}
+                        </div>
+                        <div>
+                            <span class="step-type">${step.step_type}</span>
+                            <span class="step-duration">${step.duration_ms}ms</span>
+                        </div>
+                    </div>
+                    <div class="step-expand-icon">▼</div>
+                </div>
+                <div class="step-body">
+                    ${renderStepBody(step)}
+                </div>
+            `;
+            
+            return div;
+        }
+        
+        function renderStepBody(step) {
+            let html = '';
+            
+            // Reasoning
+            if (step.reasoning) {
+                html += `
+                    <div class="step-section">
+                        <div class="section-title">
+                            <span class="section-icon"></span>
+                            Reasoning
+                        </div>
+                        <div class="reasoning-box">${step.reasoning}</div>
+                    </div>
+                `;
+            }
+            
+            // Input
+            if (step.input) {
+                html += `
+                    <div class="step-section">
+                        <div class="section-title">
+                            <span class="section-icon"></span>
+                            Input
+                        </div>
+                        <pre class="code-block">${JSON.stringify(step.input, null, 2)}</pre>
+                    </div>
+                `;
+            }
+            
+            // Evaluations (the star of the show!)
+            if (step.evaluations) {
+                // Check if it's streaming mode (object) or regular mode (array)
+                if (step.evaluations.mode === "stream" || (Array.isArray(step.evaluations) && step.evaluations.length > 0)) {
+                    html += renderEvaluations(step.evaluations);
+                }
+            }
+            
+            // Output
+            if (step.output) {
+                html += `
+                    <div class="step-section">
+                        <div class="section-title">
+                            <span class="section-icon"></span>
+                            Output
+                        </div>
+                        <pre class="code-block">${JSON.stringify(step.output, null, 2)}</pre>
+                    </div>
+                `;
+            }
+            
+            return html;
+        }
+        
+        function renderEvaluations(evaluations) {
+            // Debug: Log what we received
+            console.log('renderEvaluations called with:', evaluations);
+            
+            // Check if streaming mode (large dataset)
+            if (evaluations && evaluations.mode === "stream") {
+                console.log('Rendering streaming evaluations');
+                return renderStreamingEvaluations(evaluations);
+            }
+            
+            // Check if empty
+            if (!evaluations || evaluations.length === 0) {
+                return '';
+            }
+            
+            // Original array format
+            const passedCount = evaluations.filter(e => e.qualified).length;
+            const failedCount = evaluations.length - passedCount;
+            
+            let html = `
+                <div class="step-section">
+                    <div class="section-title">
+                        <span class="section-icon"></span>
+                        Evaluations (${evaluations.length} items)
+                    </div>
+                    
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-number" style="color: #48bb78;">${passedCount}</div>
+                            <div class="stat-label">Passed</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" style="color: #f56565;">${failedCount}</div>
+                            <div class="stat-label">Failed</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number">${Math.round((passedCount/evaluations.length)*100)}%</div>
+                            <div class="stat-label">Pass Rate</div>
+                        </div>
+                    </div>
+                    
+                    <div class="evaluation-filters">
+                        <button class="filter-btn active" onclick="filterEvals('all')">All</button>
+                        <button class="filter-btn" onclick="filterEvals('passed')">Passed Only</button>
+                        <button class="filter-btn" onclick="filterEvals('failed')">Failed Only</button>
+                    </div>
+                    
+                    <div class="evaluations-container">
+            `;
+            
+            evaluations.forEach((eval, idx) => {
+                html += renderEvaluation(eval, idx);
+            });
+            
+            html += `
+                    </div>
+                </div>
+            `;
+            
+            return html;
+        }
+        
+        function renderStreamingEvaluations(streamInfo) {
+            /**
+             * Render streaming evaluation summary with load-on-demand.
+             */
+            const totalCount = streamInfo.total;
+            const passedCount = streamInfo.passed;
+            const failedCount = streamInfo.failed;
+            const passRate = streamInfo.pass_rate;
+            
+            let html = `
+                <div class="step-section">
+                    <div class="section-title">
+                        <span class="section-icon"></span>
+                        Evaluations (${totalCount.toLocaleString()} items)
+                    </div>
+                    
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-number">${totalCount.toLocaleString()}</div>
+                            <div class="stat-label">Total Evaluated</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" style="color: #48bb78;">${passedCount.toLocaleString()}</div>
+                            <div class="stat-label">Passed</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" style="color: #f56565;">${failedCount.toLocaleString()}</div>
+                            <div class="stat-label">Failed</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number">${passRate}%</div>
+                            <div class="stat-label">Pass Rate</div>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-top: 20px; text-align: center;">
+                        <button class="btn" onclick="loadStreamingEvaluations('${streamInfo.file}', this)">
+                            Load Evaluation Details
+                        </button>
+                        <button class="btn" style="background: #718096; margin-left: 10px;" onclick="downloadJSONL('${streamInfo.file}')">
+                            Download JSONL
+                        </button>
+                    </div>
+                    
+                    <div id="streaming-evaluations-container" style="margin-top: 20px; display: none;">
+                        <!-- Evaluations will be loaded here -->
+                    </div>
+                </div>
+            `;
+            
+            return html;
+        }
+        
+        async function loadStreamingEvaluations(filepath, buttonElement) {
+            /**
+             * Load evaluations from JSONL file and display them.
+             */
+            const container = document.getElementById('streaming-evaluations-container');
+            
+            // Show loading state
+            buttonElement.disabled = true;
+            buttonElement.textContent = 'Loading...';
+            container.style.display = 'block';
+            container.innerHTML = '<div style="text-align: center; padding: 20px;">Loading evaluations...</div>';
+            
+            try {
+                console.log('Fetching evaluations from:', filepath);
+                
+                // Fetch the JSONL file
+                const response = await fetch(filepath);
+                console.log('Response status:', response.status, response.statusText);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const text = await response.text();
+                const lines = text.trim().split('\n');
+                
+                // Parse each line as JSON
+                const evaluations = [];
+                for (const line of lines) {
+                    if (line.trim()) {
+                        try {
+                            evaluations.push(JSON.parse(line));
+                        } catch (e) {
+                            console.warn('Failed to parse line:', line);
+                        }
+                    }
+                }
+                
+                // Display success message
+                buttonElement.textContent = `Loaded ${evaluations.length} Evaluations`;
+                buttonElement.style.background = '#48bb78';
+                
+                // Render evaluations with filters and pagination
+                renderLoadedEvaluations(evaluations, container);
+                
+            } catch (error) {
+                console.error('Error loading evaluations:', error);
+                container.innerHTML = `
+                    <div style="background: #fff5f5; border: 1px solid #fc8181; padding: 15px; border-radius: 4px; color: #c53030;">
+                        <strong>Error Loading Evaluations</strong><br>
+                        ${error.message}<br>
+                        <small>File: ${filepath}</small><br><br>
+                        <strong>Troubleshooting:</strong><br>
+                        • Make sure you opened dashboard.html from the project root directory<br>
+                        • Check that the file exists: ${filepath}<br>
+                        • Try using a local web server instead of file:// protocol
+                    </div>
+                `;
+                buttonElement.textContent = 'Load Failed';
+                buttonElement.disabled = false;
+            }
+        }
+        
+        function renderLoadedEvaluations(evaluations, container) {
+            /**
+             * Render the loaded evaluations with filters and pagination.
+             */
+            const passedCount = evaluations.filter(e => e.qualified).length;
+            const failedCount = evaluations.length - passedCount;
+            
+            // Store evaluations globally for filtering and pagination
+            window.currentEvaluations = evaluations;
+            window.currentFilter = 'all';
+            window.currentPage = 1;
+            window.itemsPerPage = 10;
+            
+            let html = `
+                <div style="border-top: 2px solid #e2e8f0; padding-top: 20px;">
+                    <h3 style="margin-bottom: 15px;">Evaluation Details (${evaluations.length} items)</h3>
+                    
+                    <div class="evaluation-filters">
+                        <button class="filter-btn active" onclick="changeFilter('all')">All (${evaluations.length})</button>
+                        <button class="filter-btn" onclick="changeFilter('passed')">Passed (${passedCount})</button>
+                        <button class="filter-btn" onclick="changeFilter('failed')">Failed (${failedCount})</button>
+                    </div>
+                    
+                    <div id="pagination-top" class="pagination"></div>
+                    
+                    <div id="evaluations-list" class="evaluations-container">
+                    </div>
+                    
+                    <div id="pagination-bottom" class="pagination"></div>
+                </div>
+            `;
+            
+            container.innerHTML = html;
+            
+            // Render first page
+            renderEvaluationsPage();
+        }
+        
+        function getFilteredEvaluations() {
+            /**
+             * Get evaluations filtered by current filter.
+             */
+            if (!window.currentEvaluations) return [];
+            
+            if (window.currentFilter === 'all') {
+                return window.currentEvaluations;
+            } else if (window.currentFilter === 'passed') {
+                return window.currentEvaluations.filter(e => e.qualified);
+            } else if (window.currentFilter === 'failed') {
+                return window.currentEvaluations.filter(e => !e.qualified);
+            }
+            return window.currentEvaluations;
+        }
+        
+        function renderEvaluationsPage() {
+            /**
+             * Render the current page of evaluations.
+             */
+            const filtered = getFilteredEvaluations();
+            const totalItems = filtered.length;
+            const totalPages = Math.ceil(totalItems / window.itemsPerPage);
+            
+            // Ensure current page is valid
+            if (window.currentPage > totalPages && totalPages > 0) {
+                window.currentPage = totalPages;
+            }
+            if (window.currentPage < 1) {
+                window.currentPage = 1;
+            }
+            
+            // Calculate slice indices
+            const startIdx = (window.currentPage - 1) * window.itemsPerPage;
+            const endIdx = Math.min(startIdx + window.itemsPerPage, totalItems);
+            const pageItems = filtered.slice(startIdx, endIdx);
+            
+            // Render evaluations
+            const listContainer = document.getElementById('evaluations-list');
+            if (listContainer) {
+                let html = '';
+                pageItems.forEach((evaluation, idx) => {
+                    html += renderEvaluation(evaluation, startIdx + idx);
+                });
+                
+                if (html === '') {
+                    html = '<div style="text-align: center; padding: 40px; color: #a0aec0;">No evaluations match the current filter.</div>';
+                }
+                
+                listContainer.innerHTML = html;
+            }
+            
+            // Render pagination controls
+            renderPaginationControls(totalItems, totalPages);
+        }
+        
+        function renderPaginationControls(totalItems, totalPages) {
+            /**
+             * Render pagination buttons.
+             */
+            const startIdx = (window.currentPage - 1) * window.itemsPerPage + 1;
+            const endIdx = Math.min(window.currentPage * window.itemsPerPage, totalItems);
+            
+            let paginationHTML = '';
+            
+            if (totalPages > 1) {
+                // Previous button
+                paginationHTML += `
+                    <button class="pagination-btn" onclick="changePage(${window.currentPage - 1})" ${window.currentPage === 1 ? 'disabled' : ''}>
+                        ◀ Previous
+                    </button>
+                `;
+                
+                // Page info
+                paginationHTML += `
+                    <span class="pagination-info">
+                        Showing ${startIdx}-${endIdx} of ${totalItems} items (Page ${window.currentPage} of ${totalPages})
+                    </span>
+                `;
+                
+                // Next button
+                paginationHTML += `
+                    <button class="pagination-btn" onclick="changePage(${window.currentPage + 1})" ${window.currentPage === totalPages ? 'disabled' : ''}>
+                        Next ▶
+                    </button>
+                `;
+            } else if (totalItems > 0) {
+                paginationHTML = `
+                    <span class="pagination-info">
+                        Showing all ${totalItems} items
+                    </span>
+                `;
+            }
+            
+            // Update both pagination areas
+            const topPagination = document.getElementById('pagination-top');
+            const bottomPagination = document.getElementById('pagination-bottom');
+            
+            if (topPagination) topPagination.innerHTML = paginationHTML;
+            if (bottomPagination) bottomPagination.innerHTML = paginationHTML;
+        }
+        
+        function changePage(newPage) {
+            /**
+             * Change to a different page.
+             */
+            const filtered = getFilteredEvaluations();
+            const totalPages = Math.ceil(filtered.length / window.itemsPerPage);
+            
+            if (newPage >= 1 && newPage <= totalPages) {
+                window.currentPage = newPage;
+                renderEvaluationsPage();
+                
+                // Scroll to top of evaluations
+                const listContainer = document.getElementById('evaluations-list');
+                if (listContainer) {
+                    listContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            }
+        }
+        
+        function changeFilter(filter) {
+            /**
+             * Change the evaluation filter.
+             */
+            // Update button states
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // Update filter and reset to page 1
+            window.currentFilter = filter;
+            window.currentPage = 1;
+            
+            // Re-render
+            renderEvaluationsPage();
+        }
+        
+        function downloadJSONL(filepath) {
+            /**
+             * Download the JSONL file.
+             */
+            window.open(filepath, '_blank');
+        }
+        
+        function renderEvaluation(eval, idx) {
+            const status = eval.qualified ? 'passed' : 'failed';
+            const badge = eval.qualified ? 'PASSED' : 'FAILED';
+            
+            let html = `
+                <div class="evaluation ${status}" data-eval-status="${status}">
+                    <div class="eval-header">
+                        <div class="eval-title">${eval.item_data.title || eval.item_id}</div>
+                        <span class="eval-badge ${status}">${badge}</span>
+                    </div>
+            `;
+            
+            // Show item data
+            if (eval.item_data) {
+                html += '<div style="color: #718096; font-size: 0.9rem; margin-bottom: 10px;">';
+                if (eval.item_data.price) html += `💲 $${eval.item_data.price} `;
+                if (eval.item_data.rating) html += `⭐ ${eval.item_data.rating}★ `;
+                if (eval.item_data.reviews) html += `💬 ${eval.item_data.reviews.toLocaleString()} reviews`;
+                html += '</div>';
+            }
+            
+            // Show checks
+            if (eval.checks && eval.checks.length > 0) {
+                html += '<div class="eval-checks">';
+                eval.checks.forEach(check => {
+                    const checkStatus = check.passed ? 'passed' : 'failed';
+                    const icon = check.passed ? '✓' : '✗';
+                    html += `
+                        <div class="check-item">
+                            <span class="check-icon ${checkStatus}">${icon}</span>
+                            <span class="check-name">${check.name}</span>
+                            <span class="check-detail">${check.detail}</span>
+                        </div>
+                    `;
+                });
+                html += '</div>';
+            }
+            
+            html += '</div>';
+            return html;
+        }
+        
+        function toggleStep(index) {
+            const step = document.getElementById('step-' + index);
+            step.classList.toggle('expanded');
+        }
+        
+        function filterEvals(filter) {
+            /**
+             * Legacy filter function for non-paginated evaluations.
+             * Used for inline evaluations in step details.
+             */
+            // Update button states
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // Filter evaluations
+            document.querySelectorAll('.evaluation').forEach(eval => {
+                const status = eval.getAttribute('data-eval-status');
+                if (filter === 'all' || status === filter) {
+                    eval.style.display = 'block';
+                } else {
+                    eval.style.display = 'none';
+                }
+            });
+        }
+        
+        function formatDate(isoString) {
+            const date = new Date(isoString);
+            return date.toLocaleString();
+        }
+        
+        // ===== API Functions for Running Demo =====
+        
+        async function runDemo() {
+            const btn = document.getElementById('runDemoBtn');
+            const status = document.getElementById('runStatus');
+            const statusText = document.getElementById('runStatusText');
+            const viewBtn = document.getElementById('viewResultsBtn');
+            
+            // Get parameters
+            const params = {
+                num_candidates: parseInt(document.getElementById('numCandidates').value),
+                min_price_multiplier: parseFloat(document.getElementById('minPrice').value),
+                max_price_multiplier: parseFloat(document.getElementById('maxPrice').value),
+                min_rating: parseFloat(document.getElementById('minRating').value),
+                min_reviews: parseInt(document.getElementById('minReviews').value)
+            };
+            
+            // Update UI
+            btn.disabled = true;
+            btn.textContent = 'Running...';
+            status.classList.add('show');
+            statusText.textContent = 'Executing demo pipeline...';
+            viewBtn.style.display = 'none';
+            
+            try {
+                const response = await fetch('http://localhost:5000/api/demo/run', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(params)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    statusText.innerHTML = `
+                        <strong>Demo completed successfully!</strong><br>
+                        Execution ID: ${result.execution_id}
+                    `;
+                    
+                    // Store execution data for quick access
+                    window.lastExecution = result.execution_data;
+                    
+                    // Auto-load after a brief delay
+                    setTimeout(() => {
+                        loadLastExecution();
+                    }, 1500);
+                } else {
+                    statusText.innerHTML = `
+                        <strong>Error:</strong> ${result.error}
+                    `;
+                }
+            } catch (error) {
+                statusText.innerHTML = `
+                    <strong>Failed to connect to API server</strong><br>
+                    Make sure the API server is running: <code>python api_server.py</code>
+                `;
+                console.error('Error:', error);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Run Demo';
+            }
+        }
+        
+        function loadLastExecution() {
+            if (window.lastExecution) {
+                // Load the execution data
+                loadExecution(window.lastExecution);
+                
+                // Scroll to results after a brief delay
+                setTimeout(() => {
+                    const mainContent = document.getElementById('mainContent');
+                    if (mainContent) {
+                        mainContent.scrollIntoView({ 
+                            behavior: 'smooth',
+                            block: 'start'
+                        });
+                    }
+                }, 200);
+            }
+        }
+        
+        // Auto-expand first step
+        setTimeout(() => {
+            if (currentExecution && currentExecution.steps.length > 0) {
+                toggleStep(2); // Expand the filter step by default
+            }
+        }, 100);
+    </script>
+</body>
+</html>
+

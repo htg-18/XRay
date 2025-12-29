@@ -1,0 +1,12 @@
+# X-Ray has no external dependencies!
+# Pure Python 3.9+ standard library only.
+
+# For development/testing (optional):
+# pytest>=7.0.0
+# black>=22.0.0
+# mypy>=0.950
+
+# For API server (dashboard with run button):
+flask>=2.3.0
+flask-cors>=4.0.0
+
